@@ -1,7 +1,7 @@
 {
-  "name": "plugin-sample-vite-svelte",
-  "author": "frostime",
-  "url": "https://github.com/siyuan-note/plugin-sample-vite-svelte",
+  "name": "siyuan-ext-importer",
+  "author": "Akkuman",
+  "url": "https://github.com/Akkuman/siyuan-ext-importer",
   "version": "0.3.5",
   "minAppVersion": "3.0.12",
   "backends": [
@@ -14,9 +14,7 @@
   ],
   "frontends": [
     "desktop",
-    "mobile",
     "browser-desktop",
-    "browser-mobile",
     "desktop-window"
   ],
   "displayName": {

@@ -1,4 +1,5 @@
 import { resolve } from "path"
+import UnoCSS from 'unocss/vite'
 import { defineConfig, loadEnv } from "vite"
 import minimist from "minimist"
 import { viteStaticCopy } from "vite-plugin-static-copy"
@@ -26,6 +27,8 @@ export default defineConfig({
 
     plugins: [
         svelte(),
+
+        UnoCSS(),
 
         vitePluginYamlI18n({
             inDir: 'public/i18n',
