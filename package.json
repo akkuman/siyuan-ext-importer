@@ -38,6 +38,7 @@
     "@ikun-ui/button": "^0.2.6",
     "@ikun-ui/core": "^0.2.6",
     "@ikun-ui/flex": "^0.2.6",
+    "@ikun-ui/grid": "^0.2.6",
     "@ikun-ui/select": "^0.2.6"
   }
 }
