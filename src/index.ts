@@ -46,7 +46,6 @@ export default class PluginSample extends Plugin {
                 this.showDialog()
             }
         });
-        this.showDialog()
 
         console.log(this.i18n.helloPlugin);
     }
