@@ -117,7 +117,7 @@
 						console.log(`Importing note ${fileInfo.title}`);
 
 						const markdownBody = await readToMarkdown(info, file);
-						const path = `${info.getPathForFile(fileInfo)}${fileInfo.title}.md`;
+						const path = `${info.getPathForFile(fileInfo)}${fileInfo.title}`;
 						await client.createDocWithMd({
 							markdown: markdownBody,
 							notebook: currentNotebook.id,
