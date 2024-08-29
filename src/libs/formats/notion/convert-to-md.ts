@@ -78,6 +78,8 @@ export async function readToMarkdown(info: NotionResolverInfo, file: ZipEntryFil
 	replaceTableOfContents(body);
 	formatDatabases(body);
 
+    cleanInvalidDOM(body);
+
 	let htmlString = body.innerHTML;
 	
 	// Simpler to just use the HTML string for this replacement
@@ -479,5 +481,14 @@ function convertLinksToObsidian(info: NotionResolverInfo, notionLinks: NotionLin
 
 		obsidianLink.setText(linkContent);
 		link.a.replaceWith(obsidianLink);
+	}
+}
+
+function cleanInvalidDOM(body: HTMLElement) {
+	for (const ele of body.findAll('script[src]')) {
+		ele.remove();
+	}
+    for (const ele of body.findAll('link[rel="stylesheet"]')) {
+		ele.remove();
 	}
 }
