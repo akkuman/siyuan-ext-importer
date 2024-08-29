@@ -45,7 +45,7 @@ export function stringToUtf8(text: string): ArrayBuffer {
 }
 
 export function serializeFrontMatter(frontMatter: any): string {
-	if (!Object.isEmpty(frontMatter)) {
+	if (!isEmptyObject(frontMatter)) {
 		return '---\n' + stringifyYaml(frontMatter) + '---\n';
 	}
 
@@ -58,4 +58,91 @@ export function truncateText(text: string, limit: number, ellipses: string = '..
 	}
 
 	return text.substring(0, limit) + ellipses;
+}
+
+export function HTMLElementfindAll(ele: HTMLElement, selector: string): HTMLElement[] {
+    return Array.from(ele.querySelectorAll(selector)) as HTMLElement[];
+}
+
+export function isEmptyObject(obj: object): boolean {
+    return Object.keys(obj).length === 0;
+}
+
+export function createEl<K extends keyof HTMLElementTagNameMap>(
+    tag: K,
+    o?: DomElementInfo | string,
+    callback?: (el: HTMLElementTagNameMap[K]) => void
+): HTMLElementTagNameMap[K] {
+    const element = document.createElement(tag);
+
+    if (typeof o === 'string') {
+        element.textContent = o;
+    } else if (typeof o === 'object' && o !== null) {
+        if (o.text !== undefined) {
+            if (typeof o.text === 'string') {
+                element.textContent = o.text;
+            } else {
+                element.appendChild(o.text);
+            }
+        }
+
+        if (o.cls) {
+            if (Array.isArray(o.cls)) {
+                element.classList.add(...o.cls);
+            } else {
+                element.className = o.cls;
+            }
+        }
+
+        if (o.attr) {
+            for (const key in o.attr) {
+                if (o.attr.hasOwnProperty(key)) {
+                    const value = o.attr[key];
+                    if (value === null) {
+                        element.removeAttribute(key);
+                    } else {
+                        element.setAttribute(key, String(value));
+                    }
+                }
+            }
+        }
+
+        if (o.title) {
+            element.title = o.title;
+        }
+
+        if (o.value) {
+            (element as HTMLInputElement).value = o.value;
+        }
+
+        if (o.type) {
+            (element as HTMLInputElement).type = o.type;
+        }
+
+        if (o.placeholder) {
+            (element as HTMLInputElement).placeholder = o.placeholder;
+        }
+
+        if (o.href) {
+            (element as HTMLAnchorElement).href = o.href;
+        }
+
+        if (o.parent) {
+            if (o.prepend && o.parent.firstChild) {
+                o.parent.insertBefore(element, o.parent.firstChild);
+            } else {
+                o.parent.appendChild(element);
+            }
+        }
+    }
+
+    if (typeof callback === 'function') {
+        callback(element);
+    }
+
+    return element;
+}
+
+export function createSpan(o?: DomElementInfo | string, callback?: (el: HTMLSpanElement) => void): HTMLSpanElement {
+    return createEl('span', o, callback) as HTMLSpanElement;
 }

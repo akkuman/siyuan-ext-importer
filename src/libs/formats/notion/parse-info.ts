@@ -10,11 +10,11 @@ export async function parseFileInfo(info: NotionResolverInfo, file: ZipEntryFile
 		const text = await file.readText();
 
 		const dom = parseHTML(text);
-		const body = dom.find('body');
+		const body = dom.querySelector('body');
 		const children = body.children;
 		let id: string | undefined;
 		for (let i = 0; i < children.length; i++) {
-			id = getNotionId(children[i].getAttr('id') ?? '');
+			id = getNotionId(children[i].getAttribute('id') ?? '');
 			if (id) break;
 		}
 		if (!id) {
@@ -25,7 +25,7 @@ export async function parseFileInfo(info: NotionResolverInfo, file: ZipEntryFile
 		const mtime = extractTimeFromDOMElement(dom, 'property-row-last_edited_time');
 
 		// Because Notion cuts titles to be very short and chops words in half, we read the complete title from the HTML to get full words. Worth the extra processing time.
-		const parsedTitle = dom.find('title')?.textContent || 'Untitled';
+		const parsedTitle = dom.querySelector('title')?.textContent || 'Untitled';
 
 		let title = stripTo200(sanitizeFileName(
 			parsedTitle

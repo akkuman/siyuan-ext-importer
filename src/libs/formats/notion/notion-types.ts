@@ -81,7 +81,7 @@ export class NotionResolverInfo {
 		return fileInfo.parentIds
 			.map((parentId) =>
 				idsToFileInfo[parentId]?.title ??
-				pathNames.find((pathSegment) => pathSegment.contains(parentId))?.replace(` ${parentId}`, '')
+				pathNames.find((pathSegment) => pathSegment.includes(parentId))?.replace(` ${parentId}`, '')
 			)
 			// Notion inline databases have no .html file and aren't a note, so we just filter them out of the folder structure.
 			.filter((parentId) => parentId)
