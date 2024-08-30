@@ -70,10 +70,11 @@
 		</KCol>
 	</KRow>
 
-	<KDivider></KDivider>
+	<KDivider/>
 
 	{#if showProgressBar}
 		<KProgress percentage={Number((progressCurrent/progressTotal*100).toFixed(1))}></KProgress>
+		<KDivider/>
 	{/if}
 	
 	<Notion {currentNotebook} on:progressChange={handleProgressChange} on:startImport={handleStartImport} />
