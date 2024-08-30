@@ -28,6 +28,11 @@ export type NotionProperty = {
 	body: HTMLTableCellElement;
 };
 
+export type MarkdownInfo = {
+	content: string;
+	attrs: { [key: string]: string };
+}
+
 export type NotionLink =
 	{
 		type: 'relation';

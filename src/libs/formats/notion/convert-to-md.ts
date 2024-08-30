@@ -1,7 +1,7 @@
 import { parseFilePath } from '../../filesystem.js';
-import { HTMLElementfindAll, parseHTML, serializeFrontMatter, createEl, createSpan } from '../../util.js';
+import { HTMLElementfindAll, parseHTML, createEl, createSpan } from '../../util.js';
 import { ZipEntryFile } from '../../zip.js';
-import { NotionLink, NotionProperty, NotionPropertyType, NotionResolverInfo } from './notion-types.js';
+import { MarkdownInfo, NotionLink, NotionProperty, NotionPropertyType, NotionResolverInfo } from './notion-types.js';
 import {
 	escapeHashtags,
 	getNotionId,
@@ -16,7 +16,7 @@ function htmlToMarkdown(html: string): string {
     return lute.HTML2Md(html)
 }
 
-export async function readToMarkdown(info: NotionResolverInfo, file: ZipEntryFile): Promise<string> {
+export async function readToMarkdown(info: NotionResolverInfo, file: ZipEntryFile): Promise<MarkdownInfo> {
 	const text = await file.readText();
 
 	const dom = parseHTML(text);
@@ -30,7 +30,7 @@ export async function readToMarkdown(info: NotionResolverInfo, file: ZipEntryFil
 	const notionLinks = getNotionLinks(info, body);
 	convertLinksToObsidian(info, notionLinks);
 
-	let frontMatter: any = {};
+	let frontMatter: MarkdownInfo['attrs'] = {};
 
 	const rawProperties = dom.querySelector('table[class=properties] > tbody') as HTMLTableSectionElement | undefined;
 	if (rawProperties) {
@@ -91,7 +91,10 @@ export async function readToMarkdown(info: NotionResolverInfo, file: ZipEntryFil
 	const description = dom.querySelector('p[class*=page-description]')?.textContent;
 	if (description) markdownBody = description + '\n\n' + markdownBody;
 
-	return serializeFrontMatter(frontMatter) + markdownBody;
+	return {
+		'content': markdownBody,
+		'attrs': frontMatter,
+	}
 }
 
 const typesMap: Record<NotionProperty['type'], NotionPropertyType[]> = {

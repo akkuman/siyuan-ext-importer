@@ -110,15 +110,33 @@
 
 						console.log(`Importing note ${fileInfo.title}`);
 
-						const markdownBody = await readToMarkdown(info, file);
+						const markdownInfo = await readToMarkdown(info, file);
 						const path = `${info.getPathForFile(fileInfo)}${fileInfo.title}`;
 						const resCreateDocWithMd = await client.createDocWithMd({
-							markdown: markdownBody,
+							markdown: markdownInfo.content,
 							notebook: currentNotebook.id,
 							path: path,
 						})
 						if (resCreateDocWithMd.code !== 0) {
-							console.error(resCreateDocWithMd.msg)
+							console.error(resCreateDocWithMd.msg);
+                            return;
+						}
+                        const resSetBlockAttrs = await client.setBlockAttrs({
+                            'id': resCreateDocWithMd.data,
+                            'attrs': Object.fromEntries(
+                                // 给所有的属性键加上特定前缀
+                                // 参见：https://docs.siyuan-note.club/zh-Hans/reference/api/kernel/#%E8%AE%BE%E7%BD%AE%E5%9D%97%E5%B1%9E%E6%80%A7
+                                Object.entries(markdownInfo.attrs).map(([key, value]) => {
+                                    if (!key.startsWith('custom-')) {
+                                        return [`custom-${key}`, value];
+                                    }
+                                    return [key, value];
+                                })
+                            ),
+                        })
+                        if (resSetBlockAttrs.code !== 0) {
+							console.error(resSetBlockAttrs.msg);
+                            return;
 						}
 					} else {
 						const attachmentInfo = info.pathsToAttachmentInfo[file.filepath];
@@ -134,7 +152,8 @@
 							'path': attachmentInfo.pathInSiYuanFs,
 						})
 						if (resPutFile.code !== 0) {
-							console.error(resPutFile.msg)
+							console.error(resPutFile.msg);
+                            return;
 						}
 					}
 					console.log(`progress ${total}/${total}`)

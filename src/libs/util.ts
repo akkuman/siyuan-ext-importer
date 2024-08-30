@@ -1,4 +1,3 @@
-import { stringify } from 'yaml'
 import CryptoJS from 'crypto-js';
 
 let illegalRe = /[\/\?<>\\:\*\|"]/g;
@@ -42,11 +41,6 @@ interface DomElementInfo {
     href?: string;
 }
 
-
-export function stringifyYaml(data: unknown) {
-    return stringify(data)
-}
-
 export function sanitizeFileName(name: string) {
 	return name
 		.replace(illegalRe, '')
@@ -76,14 +70,6 @@ export function uint8arrayToArrayBuffer(input: Uint8Array): ArrayBuffer {
 
 export function stringToUtf8(text: string): ArrayBuffer {
 	return uint8arrayToArrayBuffer(new TextEncoder().encode(text));
-}
-
-export function serializeFrontMatter(frontMatter: any): string {
-	if (!isEmptyObject(frontMatter)) {
-		return '---\n' + stringifyYaml(frontMatter) + '---\n';
-	}
-
-	return '';
 }
 
 export function truncateText(text: string, limit: number, ellipses: string = '...') {
