@@ -122,7 +122,7 @@ const typesMap: Record<NotionProperty['type'], NotionPropertyType[]> = {
 	],
 };
 
-function parseProperty(property: HTMLTableRowElement): YamlProperty | undefined {
+function parseProperty(property: HTMLTableRowElement): {content: string; title: string;} | undefined {
 	const notionType = property.className.match(/property-row-(.*)/)?.[1] as NotionPropertyType;
 	if (!notionType) {
 		throw new Error('property type not found for: ' + property);
@@ -138,16 +138,17 @@ function parseProperty(property: HTMLTableRowElement): YamlProperty | undefined 
 
 	if (!type) throw new Error('type not found for: ' + body);
 
-	let content: YamlProperty['content'] = '';
+	let content: string = '';
 
 	switch (type) {
 		case 'checkbox':
 			// checkbox-on: checked, checkbox-off: unchecked.
-			content = body.innerHTML.includes('checkbox-on');
+			content = String(body.innerHTML.includes('checkbox-on'));
 			break;
 		case 'number':
-			content = Number(body.textContent);
-			if (isNaN(content)) return;
+			const numberContent = Number(body.textContent);
+			if (isNaN(numberContent)) return;
+			content = String(numberContent);
 			break;
 		case 'date':
 			fixNotionDates(body);
@@ -161,7 +162,7 @@ function parseProperty(property: HTMLTableRowElement): YamlProperty | undefined 
 				if (!itemContent) continue;
 				childList.push(itemContent);
 			}
-			content = childList;			
+			content = childList.join('\n');
 			if (content.length === 0) return;
 			break;
 		case 'text':
