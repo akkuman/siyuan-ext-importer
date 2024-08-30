@@ -20,7 +20,7 @@ import {
 } from "siyuan";
 import "@/index.scss";
 
-import ImportForm from "@/import-form.svelte"
+import ImportForm from "@/ImportForm.svelte"
 
 import { svelteDialog } from "./libs/dialog";
 
