@@ -3,14 +3,20 @@
 	import { KCol, KRow } from '@ikun-ui/grid';
 	import { KSelect } from '@ikun-ui/select';
 	import { KDivider } from '@ikun-ui/divider';
+	import { KProgress } from '@ikun-ui/progress';
 	import { Client } from '@siyuan-community/siyuan-sdk';
     import { onMount } from 'svelte';
-    import Notion from './imports/Notion.svelte';
+    import Notion from '@/imports/Notion.svelte';
+    import { KButton } from '@ikun-ui/button';
+    import Ikun from '@/assets/ikun.svelte';
 
 	const client = new Client();
 
 	let notebooks: { label: string; value: any; }[] = [];
 	let currentNotebook: any = { name: '' };
+	let progressCurrent = 0;
+    let progressTotal = 100;
+	let showProgressBar = false;
 
 	// 用户指南不应该作为可以写入的笔记本
 	const hiddenNotebook: Set<string> = new Set(["思源笔记用户指南", "SiYuan User Guide"]);
@@ -26,6 +32,15 @@
 
 	const onNotebookChange = async function (e) {
 		currentNotebook = e.detail.value
+	}
+
+	function handleProgressChange(event) {
+        progressCurrent = event.detail.current;
+        progressTotal = event.detail.total;
+    }
+
+	function handleStartImport(event) {
+		showProgressBar = true;
 	}
 
 	export let app;
@@ -56,6 +71,10 @@
 	</KRow>
 
 	<KDivider></KDivider>
+
+	{#if showProgressBar}
+		<KProgress percentage={progressCurrent/progressTotal*100}></KProgress>
+	{/if}
 	
-	<Notion {currentNotebook} />
+	<Notion {currentNotebook} on:progressChange={handleProgressChange} on:startImport={handleStartImport} />
 </div>

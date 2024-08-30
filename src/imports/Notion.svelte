@@ -3,18 +3,30 @@
 	import { KCol, KRow } from '@ikun-ui/grid';
 	import { KDivider } from '@ikun-ui/divider';
     import { KButton } from '@ikun-ui/button';
-    import { PickedFile, WebPickedFile } from '../libs/filesystem';
-    import { NotionResolverInfo } from '../libs/formats/notion/notion-types';
-    import { readZip, ZipEntryFile } from '../libs/zip';
-    import { getNotionId } from '../libs/formats/notion/notion-utils';
-    import { parseFileInfo } from '../libs/formats/notion/parse-info';
+    import { PickedFile, WebPickedFile } from '@/libs/filesystem';
+    import { NotionResolverInfo } from '@/libs/formats/notion/notion-types';
+    import { readZip, ZipEntryFile } from '@/libs/zip';
+    import { getNotionId } from '@/libs/formats/notion/notion-utils';
+    import { parseFileInfo } from '@/libs/formats/notion/parse-info';
 	import { Client } from '@siyuan-community/siyuan-sdk';
-    import { readToMarkdown } from '../libs/formats/notion/convert-to-md';
-    import FileInput from '../FileInput.svelte';
+    import { readToMarkdown } from '@/libs/formats/notion/convert-to-md';
+    import FileInput from '@/FileInput.svelte';
+    import { createEventDispatcher } from 'svelte';
+    import Ikun from '@/assets/ikun.svelte';
 
-	const client = new Client();
+    const dispatch = createEventDispatcher();
 
-	export let currentNotebook: any = { name: '' };
+    let current = 0;
+    let total = 100;
+
+    // 监听 current 和 total 的变化
+    $: dispatch('progressChange', { current, total });
+
+    const client = new Client();
+
+    export let currentNotebook: any = { name: '' };
+
+    let clickImportLoading = false;
 
 	async function processZips(files: PickedFile[], callback: (file: ZipEntryFile) => Promise<void>) {
 		for (let zipFile of files) {
@@ -59,7 +71,10 @@
 
 	let files;
 
-	async function onImport(e) {
+	async function onClickImport(e) {
+        // 点击导入时触发事件
+        dispatch('startImport');
+        clickImportLoading = true;
 		// Note that `files` is of type `FileList`, not an Array:
 		// https://developer.mozilla.org/en-US/docs/Web/API/FileList
 		console.log(files);
@@ -68,7 +83,6 @@
 			console.log(`${file.name}: ${file.size} bytes`);
 			const info = new NotionResolverInfo('', false);
 			let import_files = [new WebPickedFile(file)];
-			let total = 0;
 			console.log('Looking for files to import');
 			await processZips(import_files, async (file) => {
 				try {
@@ -80,8 +94,6 @@
 				}
 			});
 			console.log(info)
-			let current = 0;
-			// return;
 			console.log('Starting import');
 			await processZips(import_files, async (file) => {
 				current++;
@@ -125,13 +137,14 @@
 							console.error(resPutFile.msg)
 						}
 					}
-					console.log(`progress ${current}/${total}`)
+					console.log(`progress ${total}/${total}`)
 				}
 				catch (e) {
 					console.log(file.fullpath, e)
 				}
 			});
 		}
+        clickImportLoading = false;
 	}
 </script>
 
@@ -147,7 +160,12 @@
 	
 	<KRow>
 		<KCol span={24}>
-			<KButton type="primary" cls="mx-2 float-right" on:click={onImport}>导入</KButton>
+            <KButton type="primary" cls="mx-2 float-right" on:click={onClickImport} disabled={clickImportLoading}>
+                {#if clickImportLoading}
+                    <Ikun />
+                {/if}
+                导入
+            </KButton>
 		</KCol>
 	</KRow>
 </div>

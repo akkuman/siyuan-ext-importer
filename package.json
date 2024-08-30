@@ -41,6 +41,7 @@
     "@ikun-ui/flex": "^0.2.6",
     "@ikun-ui/grid": "^0.2.6",
     "@ikun-ui/layout": "^0.2.6",
+    "@ikun-ui/progress": "^0.2.6",
     "@ikun-ui/select": "^0.2.6",
     "@siyuan-community/siyuan-sdk": "^0.3.12",
     "@types/crypto-js": "^4.2.2",
