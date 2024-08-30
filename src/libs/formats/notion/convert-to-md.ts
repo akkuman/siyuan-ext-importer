@@ -1,13 +1,11 @@
-import moment from 'moment';
 import { parseFilePath } from '../../filesystem.js';
 import { HTMLElementfindAll, parseHTML, serializeFrontMatter, createEl, createSpan } from '../../util.js';
 import { ZipEntryFile } from '../../zip.js';
-import { NotionLink, NotionProperty, NotionPropertyType, NotionResolverInfo, YamlProperty } from './notion-types.js';
+import { NotionLink, NotionProperty, NotionPropertyType, NotionResolverInfo } from './notion-types.js';
 import {
 	escapeHashtags,
 	getNotionId,
 	hoistChildren,
-	parseDate,
 	stripNotionId,
 	stripParentDirectories,
 } from './notion-utils.js';
@@ -46,12 +44,6 @@ export async function readToMarkdown(info: NotionResolverInfo, file: ZipEntryFil
 			if (property) {
 				if (property.title == 'Tags') {
 					property.title = 'tags';
-					if (typeof property.content === 'string') {
-						property.content = property.content.replace(/ /g, '-');
-					}
-					else if (property.content instanceof Array) {
-						property.content = property.content.map(tag => tag.replace(/ /g, '-'));
-					}
 				}
 				frontMatter[property.title] = property.content;
 			}

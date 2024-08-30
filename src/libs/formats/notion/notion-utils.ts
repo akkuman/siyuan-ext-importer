@@ -1,4 +1,3 @@
-import type { Moment } from 'moment';
 import { parseFilePath } from '../../filesystem.js';
 
 export const stripNotionId = (id: string) => {
@@ -17,15 +16,6 @@ export const parseParentIds = (filename: string) => {
 		.map((parentNote) => getNotionId(parentNote))
 		.filter((id) => id) as string[];
 };
-
-export function parseDate(content: Moment) {
-	if (content.hour() === 0 && content.minute() === 0) {
-		return content.format('YYYY-MM-DD');
-	}
-	else {
-		return content.format('YYYY-MM-DDTHH:mm');
-	}
-}
 
 export function stripParentDirectories(relativeURI: string) {
 	return relativeURI.replace(/^(\.\.\/)+/, '');

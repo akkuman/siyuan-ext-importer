@@ -28,11 +28,6 @@ export type NotionProperty = {
 	body: HTMLTableCellElement;
 };
 
-export type YamlProperty = {
-	content: string | number | string[] | boolean;
-	title: string;
-};
-
 export type NotionLink =
 	{
 		type: 'relation';
