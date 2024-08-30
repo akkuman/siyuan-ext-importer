@@ -151,23 +151,7 @@ function parseProperty(property: HTMLTableRowElement): YamlProperty | undefined 
 			break;
 		case 'date':
 			fixNotionDates(body);
-			const dates = body.getElementsByTagName('time');
-			if (dates.length === 0) {
-				content = '';
-			}
-			else if (dates.length === 1) {
-				content = parseDate(moment(dates.item(0)?.textContent));
-			}
-			else {
-				const dateList = [];
-				for (let i = 0; i < dates.length; i++) {
-					dateList.push(
-						parseDate(moment(dates.item(i)?.textContent))
-					);
-				}
-				content = dateList.join(' - ');
-			}
-			if (content.length === 0) return;
+			content = body.querySelector('time')?.textContent || '';
 			break;
 		case 'list':
 			const children = body.children;
