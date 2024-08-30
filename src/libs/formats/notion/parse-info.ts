@@ -1,8 +1,7 @@
-import { assetBaseDir, parseHTML, sanitizeFileName } from '../../util.js';
+import { assetBaseDir, calculateMD5, parseHTML, sanitizeFileName } from '../../util.js';
 import { ZipEntryFile } from '../../zip.js';
 import { NotionResolverInfo } from './notion-types.js';
 import { getNotionId, parseParentIds } from './notion-utils.js';
-import { v4 as uuidv4 } from 'uuid';
 
 export async function parseFileInfo(info: NotionResolverInfo, file: ZipEntryFile) {
 	let { filepath } = file;
@@ -45,14 +44,14 @@ export async function parseFileInfo(info: NotionResolverInfo, file: ZipEntryFile
 		};
 	}
 	else {
-        let uuidFileName = uuidv4().replace(/-/g, '');
+        let hashFileName = calculateMD5(file.fullpath);
         let nameWithExtension = sanitizeFileName(file.name);
         const parts = nameWithExtension.split('.');
         let fileExt = '';
         if (parts.length > 0) {
             fileExt = parts.pop()
         }
-        let displayPathInSiYuan = `${assetBaseDir}/notion/${uuidFileName.substring(0, 2)}/${uuidFileName}.${fileExt}`
+        let displayPathInSiYuan = `${assetBaseDir}/notion/${hashFileName.substring(0, 2)}/${hashFileName}.${fileExt}`
 		info.pathsToAttachmentInfo[filepath] = {
 			path: filepath,
 			parentIds: parseParentIds(filepath),

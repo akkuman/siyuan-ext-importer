@@ -1,4 +1,5 @@
 import { stringify } from 'yaml'
+import CryptoJS from 'crypto-js';
 
 let illegalRe = /[\/\?<>\\:\*\|"]/g;
 let controlRe = /[\x00-\x1f\x80-\x9f]/g;
@@ -178,4 +179,9 @@ export function createEl<K extends keyof HTMLElementTagNameMap>(
 
 export function createSpan(o?: DomElementInfo | string, callback?: (el: HTMLSpanElement) => void): HTMLSpanElement {
     return createEl('span', o, callback) as HTMLSpanElement;
+}
+
+// 计算字符串的 MD5
+export function calculateMD5(input: string): string {
+    return CryptoJS.MD5(input).toString();
 }
