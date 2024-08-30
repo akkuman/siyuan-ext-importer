@@ -42,7 +42,7 @@ export async function readToMarkdown(info: NotionResolverInfo, file: ZipEntryFil
 		for (let row of Array.from(rawProperties.rows)) {
 			const property = parseProperty(row);
 			if (property) {
-				property.title = property.title.trim();
+				property.title = property.title.trim().replace(/ /g, '-');
 				if (property.title == 'Tags') {
 					property.title = 'tags';
 				}

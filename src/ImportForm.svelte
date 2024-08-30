@@ -7,8 +7,6 @@
 	import { Client } from '@siyuan-community/siyuan-sdk';
     import { onMount } from 'svelte';
     import Notion from '@/imports/Notion.svelte';
-    import { KButton } from '@ikun-ui/button';
-    import Ikun from '@/assets/ikun.svelte';
 
 	const client = new Client();
 

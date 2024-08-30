@@ -40,6 +40,7 @@
     "@ikun-ui/divider": "^0.2.6",
     "@ikun-ui/flex": "^0.2.6",
     "@ikun-ui/grid": "^0.2.6",
+    "@ikun-ui/input": "^0.2.6",
     "@ikun-ui/layout": "^0.2.6",
     "@ikun-ui/progress": "^0.2.6",
     "@ikun-ui/select": "^0.2.6",
