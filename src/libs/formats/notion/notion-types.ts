@@ -44,6 +44,12 @@ export type NotionLink =
 		type: 'attachment';
 		path: string;
 		a: HTMLAnchorElement;
+	}
+	|
+	{
+		type: 'image';
+		path: string;
+		a: HTMLAnchorElement;
 	};
 
 
@@ -51,7 +57,6 @@ export interface NotionFileInfo {
 	title: string;
 	parentIds: string[];
 	path: string;
-	fullLinkPathNeeded: boolean;
 	ctime: Date | null;
 	mtime: Date | null;
 }
@@ -61,7 +66,10 @@ export interface NotionAttachmentInfo {
 	parentIds: string[];
 	nameWithExtension: string;
 	targetParentFolder: string;
-	fullLinkPathNeeded: boolean;
+	// 保存文件的真实地址
+	pathInSiYuanFs: string;
+	// 展示在文档中的地址
+	pathInSiYuanMd: string;
 }
 
 export class NotionResolverInfo {

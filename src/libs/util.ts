@@ -8,6 +8,39 @@ let windowsTrailingRe = /[\. ]+$/;
 let startsWithDotRe = /^\./; // Regular expression to match filenames starting with "."
 let badLinkRe = /[\[\]#|^]/g; // Regular expression to match characters that interferes with links: [ ] # | ^
 
+export let assetBaseDir = 'assets';
+
+
+interface DomElementInfo {
+    /**
+     * The class to be assigned. Can be a space-separated string or an array of strings.
+     */
+    cls?: string | string[];
+    /**
+     * The textContent to be assigned.
+     */
+    text?: string | DocumentFragment;
+    /**
+     * HTML attributes to be added.
+     */
+    attr?: {
+        [key: string]: string | number | boolean | null;
+    };
+    /**
+     * HTML title (for hover tooltip).
+     */
+    title?: string;
+    /**
+     * The parent element to be assigned to.
+     */
+    parent?: Node;
+    value?: string;
+    type?: string;
+    prepend?: boolean;
+    placeholder?: string;
+    href?: string;
+}
+
 
 export function stringifyYaml(data: unknown) {
     return stringify(data)

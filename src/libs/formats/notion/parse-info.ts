@@ -1,7 +1,8 @@
-import { parseHTML, sanitizeFileName } from '../../util.js';
+import { assetBaseDir, parseHTML, sanitizeFileName } from '../../util.js';
 import { ZipEntryFile } from '../../zip.js';
 import { NotionResolverInfo } from './notion-types.js';
 import { getNotionId, parseParentIds } from './notion-utils.js';
+import { v4 as uuidv4 } from 'uuid';
 
 export async function parseFileInfo(info: NotionResolverInfo, file: ZipEntryFile) {
 	let { filepath } = file;
@@ -41,16 +42,24 @@ export async function parseFileInfo(info: NotionResolverInfo, file: ZipEntryFile
 			ctime,
 			mtime,
 			title,
-			fullLinkPathNeeded: false,
 		};
 	}
 	else {
+        let uuidFileName = uuidv4().replace(/-/g, '');
+        let nameWithExtension = sanitizeFileName(file.name);
+        const parts = nameWithExtension.split('.');
+        let fileExt = '';
+        if (parts.length > 0) {
+            fileExt = parts.pop()
+        }
+        let displayPathInSiYuan = `${assetBaseDir}/notion/${uuidFileName.substring(0, 2)}/${uuidFileName}.${fileExt}`
 		info.pathsToAttachmentInfo[filepath] = {
 			path: filepath,
 			parentIds: parseParentIds(filepath),
-			nameWithExtension: sanitizeFileName(file.name),
+			nameWithExtension: nameWithExtension,
 			targetParentFolder: '',
-			fullLinkPathNeeded: false,
+            pathInSiYuanMd: displayPathInSiYuan,
+            pathInSiYuanFs: `/data/${displayPathInSiYuan}`
 		};
 	}
 }

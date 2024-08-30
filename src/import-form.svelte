@@ -118,12 +118,14 @@
 
 						const markdownBody = await readToMarkdown(info, file);
 						const path = `${info.getPathForFile(fileInfo)}${fileInfo.title}`;
-						await client.createDocWithMd({
+						const resCreateDocWithMd = await client.createDocWithMd({
 							markdown: markdownBody,
 							notebook: currentNotebook.id,
 							path: path,
 						})
-
+						if (resCreateDocWithMd.code !== 0) {
+							console.error(resCreateDocWithMd.msg)
+						}
 					} else {
 						const attachmentInfo = info.pathsToAttachmentInfo[file.filepath];
 						if (!attachmentInfo) {
@@ -133,10 +135,13 @@
 						console.log(`Importing attachment ${file.name}`);
 
 						const data = await file.read();
-						await client.upload({
-							assetsDirPath: "/assets/",
-							files: [new File([data], file.name)],
+						const resPutFile = await client.putFile({
+							'file': new File([data], file.name),
+							'path': attachmentInfo.pathInSiYuanFs,
 						})
+						if (resPutFile.code !== 0) {
+							console.error(resPutFile.msg)
+						}
 					}
 					console.log(`progress ${current}/${total}`)
 				}
@@ -153,9 +158,13 @@
 
 <div>
 	<KRow>
-		<KCol span={14}>
+		<!-- <KCol span={14}>
 			<KRow><span>文件格式</span></KRow>
 			<KRow><span>要被导入的文件格式</span></KRow>
+		</KCol> -->
+		<KCol span={14}>
+			<KRow><span>笔记本</span></KRow>
+			<KRow><span>选择要导入的笔记本</span></KRow>
 		</KCol>
 		<KCol span={10}>
 			<KSelect

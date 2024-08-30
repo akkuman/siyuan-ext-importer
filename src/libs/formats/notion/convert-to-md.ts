@@ -30,14 +30,14 @@ export async function readToMarkdown(info: NotionResolverInfo, file: ZipEntryFil
 	}
 
 	const notionLinks = getNotionLinks(info, body);
-	convertLinksToObsidian(info, notionLinks, true);
+	convertLinksToObsidian(info, notionLinks);
 
 	let frontMatter: any = {};
 
 	const rawProperties = dom.querySelector('table[class=properties] > tbody') as HTMLTableSectionElement | undefined;
 	if (rawProperties) {
 		const propertyLinks = getNotionLinks(info, rawProperties);
-		convertLinksToObsidian(info, propertyLinks, false);
+		convertLinksToObsidian(info, propertyLinks);
 		// YAML only takes raw URLS
 		convertHtmlLinksToURLs(rawProperties);
 
@@ -207,8 +207,12 @@ function getNotionLinks(info: NotionResolverInfo, body: HTMLElement) {
 			links.push({ type: 'relation', a, id });
 		}
 		else if (attachmentPath) {
+			let link_type: NotionLink['type'] = 'attachment';
+			if (decodedURI.endsWith('.png')) {
+				link_type = 'image'
+			}
 			links.push({
-				type: 'attachment',
+				type: link_type,
 				a,
 				path: attachmentPath,
 			});
@@ -439,7 +443,7 @@ function convertHtmlLinksToURLs(content: HTMLElement) {
 	}
 }
 
-function convertLinksToObsidian(info: NotionResolverInfo, notionLinks: NotionLink[], embedAttachments: boolean) {
+function convertLinksToObsidian(info: NotionResolverInfo, notionLinks: NotionLink[]) {
 	for (let link of notionLinks) {
 		let obsidianLink = createSpan();
 		let linkContent: string;
@@ -456,26 +460,24 @@ function convertLinksToObsidian(info: NotionResolverInfo, notionLinks: NotionLin
 					linkContent = `[[${stripNotionId(basename)}]]`;
 				}
 				else {
-					const isInTable = link.a.closest('table');
-					linkContent = `[[${linkInfo.fullLinkPathNeeded
-						? `${info.getPathForFile(linkInfo)}${linkInfo.title}${isInTable ? '\u005C' : ''}|${linkInfo.title}`
-						: linkInfo.title
-					}]]`;
+					linkContent = `[[${linkInfo.title}]]`;
 				}
 				break;
 			case 'attachment':
-				const attachmentInfo = info.pathsToAttachmentInfo[link.path];
+				let attachmentInfo = info.pathsToAttachmentInfo[link.path];
 				if (!attachmentInfo) {
 					console.warn('missing attachment data for: ' + link.path);
 					continue;
 				}
-				linkContent = `${embedAttachments ? '!' : ''}[[${attachmentInfo.fullLinkPathNeeded
-					? attachmentInfo.targetParentFolder +
-						attachmentInfo.nameWithExtension +
-						'|' +
-						attachmentInfo.nameWithExtension
-					: attachmentInfo.nameWithExtension
-				}]]`;
+				linkContent = `[${attachmentInfo.nameWithExtension}](${attachmentInfo.pathInSiYuanMd})`;
+				break;
+			case 'image':
+				let imageInfo = info.pathsToAttachmentInfo[link.path];
+				if (!imageInfo) {
+					console.warn('missing image file for: ' + link.path);
+					continue;
+				}
+				linkContent = `![${imageInfo.nameWithExtension}](${imageInfo.pathInSiYuanMd})`;
 				break;
 		}
 
