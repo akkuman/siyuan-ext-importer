@@ -77,8 +77,6 @@
         clickImportLoading = true;
 		// Note that `files` is of type `FileList`, not an Array:
 		// https://developer.mozilla.org/en-US/docs/Web/API/FileList
-		console.log(files);
-
 		for (const file of files) {
 			console.log(`${file.name}: ${file.size} bytes`);
 			const info = new NotionResolverInfo('', false);
@@ -93,7 +91,6 @@
 					console.log('Import skipped', file.fullpath, e)
 				}
 			});
-			console.log(info)
 			console.log('Starting import');
 			await processZips(import_files, async (file) => {
 				current++;
@@ -156,7 +153,7 @@
                             return;
 						}
 					}
-					console.log(`progress ${total}/${total}`)
+					console.log(`progress ${current}/${total}`)
 				}
 				catch (e) {
 					console.log(file.fullpath, e)
