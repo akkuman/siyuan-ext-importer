@@ -115,6 +115,10 @@
 
                             const markdownInfo = await readToMarkdown(info, file);
                             const path = `${info.getPathForFile(fileInfo)}${fileInfo.title}`;
+                            if (markdownInfo.content === '') {
+                                console.log(`"${path}"'s content is blank，import skipped`)
+                                return;
+                            }
                             const resCreateDocWithMd = await client.createDocWithMd({
                                 markdown: markdownInfo.content,
                                 notebook: currentNotebook.id,
