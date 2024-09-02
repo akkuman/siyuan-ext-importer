@@ -28,14 +28,14 @@ export async function readToMarkdown(info: NotionResolverInfo, file: ZipEntryFil
 	}
 
 	const notionLinks = getNotionLinks(info, body);
-	convertLinksToObsidian(info, notionLinks);
+	convertLinksToSiYuan(info, notionLinks);
 
 	let frontMatter: MarkdownInfo['attrs'] = {};
 
 	const rawProperties = dom.querySelector('table[class=properties] > tbody') as HTMLTableSectionElement | undefined;
 	if (rawProperties) {
 		const propertyLinks = getNotionLinks(info, rawProperties);
-		convertLinksToObsidian(info, propertyLinks);
+		convertLinksToSiYuan(info, propertyLinks);
 		// YAML only takes raw URLS
 		convertHtmlLinksToURLs(rawProperties);
 
@@ -424,7 +424,7 @@ function convertHtmlLinksToURLs(content: HTMLElement) {
 	}
 }
 
-function convertLinksToObsidian(info: NotionResolverInfo, notionLinks: NotionLink[]) {
+function convertLinksToSiYuan(info: NotionResolverInfo, notionLinks: NotionLink[]) {
 	for (let link of notionLinks) {
 		let obsidianLink = createSpan();
 		let linkContent: string;
