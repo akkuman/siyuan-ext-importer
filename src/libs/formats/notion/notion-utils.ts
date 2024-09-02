@@ -6,7 +6,7 @@ export const stripNotionId = (id: string) => {
 
 // Notion UUIDs come at the end of filenames/URL paths and are always 32 characters long.
 export const getNotionId = (id: string) => {
-	return id.replace(/-/g, '').match(/([a-z0-9]{32})(\?|\.|$)/)?.[1];
+	return id.replace(/-/g, '').match(/([a-f0-9]{32})(\?|\.|$)/)?.[1];
 };
 
 export const parseParentIds = (filename: string) => {
