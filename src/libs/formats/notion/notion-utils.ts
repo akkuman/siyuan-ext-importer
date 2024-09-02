@@ -1,7 +1,7 @@
 import { parseFilePath } from '../../filesystem.js';
 
 export const stripNotionId = (id: string) => {
-	return id.replace(/-/g, '').replace(/[ -]?[a-z0-9]{32}(\.|$)/, '$1');
+	return id.replace(/-/g, '').replace(/[ -]?[a-f0-9]{32}(\.|$)/, '$1');
 };
 
 // Notion UUIDs come at the end of filenames/URL paths and are always 32 characters long.
