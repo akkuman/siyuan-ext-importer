@@ -93,7 +93,7 @@ export async function readToMarkdown(info: NotionResolverInfo, file: ZipEntryFil
 	if (description) markdownBody = description + '\n\n' + markdownBody;
 
 	return {
-		'content': markdownBody,
+		'content': markdownBody.trim(),
 		'attrs': frontMatter,
 	}
 }
