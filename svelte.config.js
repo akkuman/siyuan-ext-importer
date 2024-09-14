@@ -22,5 +22,10 @@ export default {
         // suppress warnings on `vite dev` and `vite build`; but even without this, things still work
         if (NoWarns.has(warning.code)) return;
         handler(warning);
+    },
+    kit: {
+      alias: {
+        '@': 'src'  // 这里配置路径别名
+      }
     }
 }
