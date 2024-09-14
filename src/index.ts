@@ -88,7 +88,7 @@ export default class PluginSample extends Plugin {
                 return new ImportForm({
                     target: container,
                     props: {
-                        app: this.app,
+                        pluginInstance: this,
                     }
                 });
             }

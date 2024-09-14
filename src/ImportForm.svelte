@@ -41,7 +41,7 @@
 		showProgressBar = true;
 	}
 
-	export let app;
+	export let pluginInstance;
 </script>
 
 
@@ -52,8 +52,8 @@
 			<KRow><span>要被导入的文件格式</span></KRow>
 		</KCol> -->
 		<KCol span={14}>
-			<KRow><span>笔记本</span></KRow>
-			<KRow><span>选择要导入的笔记本</span></KRow>
+			<KRow><span>{pluginInstance.i18n.notebook}</span></KRow>
+			<KRow><span>{pluginInstance.i18n.pleaseSelectNotebook}</span></KRow>
 		</KCol>
 		<KCol span={10}>
 			<KSelect
@@ -75,5 +75,5 @@
 		<KDivider/>
 	{/if}
 	
-	<Notion {currentNotebook} on:progressChange={handleProgressChange} on:startImport={handleStartImport} />
+	<Notion {currentNotebook} {pluginInstance} on:progressChange={handleProgressChange} on:startImport={handleStartImport} />
 </div>

@@ -28,6 +28,8 @@
 
     export let currentNotebook: any = { name: '' };
 
+    export let pluginInstance;
+
     let clickImportLoading = false;
 
 	async function processZips(files: PickedFile[], callback: (file: ZipEntryFile) => Promise<void>) {
@@ -85,7 +87,7 @@
                 const info = new NotionResolverInfo('', false);
                 let import_files = [new WebPickedFile(file)];
                 console.log('Looking for files to import');
-                showMessage('开始进行导入前的文件搜集', 1000*30, 'info')
+                showMessage(pluginInstance.i18n.pluginInstance, 1000*30, 'info')
                 await processZips(import_files, async (file) => {
                     try {
                         await parseFileInfo(info, file);
@@ -97,7 +99,7 @@
                 });
                 dispatch('startImport');
                 console.log('Starting import');
-                showMessage('开始执行数据导入', 1000*15, 'info')
+                showMessage(pluginInstance.i18n.startImport, 1000*15, 'info')
                 await processZips(import_files, async (file) => {
                     current++;
                     try {
@@ -153,7 +155,7 @@
                     }
                 });
             }
-            showMessage('导入数据完成', -1, 'info')
+            showMessage(pluginInstance.i18n.importFinish, -1, 'info')
         } finally {
             clickImportLoading = false;
         }
@@ -176,7 +178,7 @@
                 {#if clickImportLoading}
                     <Ikun />
                 {/if}
-                导入
+                {pluginInstance.i18n.import}
             </KButton>
 		</KCol>
 	</KRow>

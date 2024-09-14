@@ -3,3 +3,9 @@ addTopBarIcon: 导入 Notion 笔记
 helloPlugin: siyuan-ext-importer 加载完成
 byePlugin: siyuan-ext-importer 退出
 dialogTitle: 导入 Notion 笔记到思源笔记
+notebook: 笔记本
+pleaseSelectNotebook: 选择要导入的笔记本
+startCollectFilePreImport: 开始进行导入前的文件搜集
+startImport: 开始执行数据导入
+importFinish: 导入数据完成
+import: 导入
