@@ -30,7 +30,7 @@ export async function readToMarkdown(info: NotionResolverInfo, file: ZipEntryFil
 	}
 
 	// 由于 database 处理需要靠 <a href> 来构建关联关系，所以需要在转化链接之前完成
-	let attributeViews = getDatabases(info, body);
+	let attributeViews = getDatabases(info, dom);
 
 	// 将页面内所有的 a 标签转换为 siyuan 的双链指向
 	const notionLinks = getNotionLinks(info, body);
@@ -515,14 +515,12 @@ function getDatabases(info: NotionResolverInfo, body: HTMLElement) {
 		tableInfos = Array.from(body.querySelectorAll('div[class="collection-content"]')).map((divNode: HTMLElement) => {
 			return {
 				title: (divNode.querySelector('.collection-title') as HTMLElement)?.innerText.trim() || '',
-				description: '',
 				tableNode: (divNode.querySelector('table[class="collection-content"]') as HTMLElement),
 			}
 		})
 	} else {
 		tableInfos = [{
-			title: (body.querySelector('article > header > .page-title') as HTMLElement)?.innerText.trim() || '',
-			description: (body.querySelector('article > header > .page-description') as HTMLElement)?.innerText.trim() || '',
+			title: (body.querySelector('.page-title') as HTMLElement)?.innerText.trim() || '',
 			tableNode: (body.querySelector('table[class="collection-content"]') as HTMLElement),
 		}]
 	}
@@ -590,7 +588,6 @@ function getDatabases(info: NotionResolverInfo, body: HTMLElement) {
 		});
 		return {
 			title: tableInfo.title,
-			description: tableInfo.description,
 			cols: cols,
 		}
 	})
@@ -733,7 +730,7 @@ function getDatabases(info: NotionResolverInfo, body: HTMLElement) {
 		let avData = {
 			"spec": 0,
 			"id": avID,
-			"name": [table.title, table.description].filter(Boolean).join('\n'),
+			"name": table.title,
 			"keyValues": keyValues,
 			"keyIDs": null,
 			"viewID": avViewID,
