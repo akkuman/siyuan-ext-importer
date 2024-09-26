@@ -3,16 +3,17 @@
 	import { KCol, KRow } from '@ikun-ui/grid';
 	import { KDivider } from '@ikun-ui/divider';
     import { KButton } from '@ikun-ui/button';
-    import { type PickedFile, WebPickedFile } from '../libs/filesystem';
-    import { NotionResolverInfo } from '../libs/formats/notion/notion-types';
-    import { readZip, ZipEntryFile } from '../libs/zip';
-    import { getNotionId } from '../libs/formats/notion/notion-utils';
-    import { parseFileInfo } from '../libs/formats/notion/parse-info';
+    import { type PickedFile, WebPickedFile } from '@/libs/filesystem';
+    import { NotionResolverInfo } from '@/libs/formats/notion/notion-types';
+    import { readZip, ZipEntryFile } from '@/libs/zip';
+    import { getNotionId } from '@/libs/formats/notion/notion-utils';
+    import { parseFileInfo } from '@/libs/formats/notion/parse-info';
 	import { Client } from '@siyuan-community/siyuan-sdk';
     import { readToMarkdown } from '../libs/formats/notion/convert-to-md';
-    import FileInput from '../FileInput.svelte';
+    import FileInput from '@/FileInput.svelte';
     import { createEventDispatcher } from 'svelte';
-    import Ikun from '../assets/ikun.svelte';
+    import { KInput } from '@ikun-ui/input';
+    import Ikun from '@/assets/ikun.svelte';
     import { showMessage } from 'siyuan';
     import { type NotionFileInfo } from '../libs/formats/notion/notion-types';
 
@@ -123,15 +124,11 @@
                 let docSeen = 0;
                 while (true) {
                     for (const [notionID, fileInfo] of Object.entries(info.idsToFileInfo) as [string, NotionFileInfo][]) {
-                        const hPath = info.getPathForFile(fileInfo)
-                        let path = `${hPath}${fileInfo.title}`;
-                        if (!path.startsWith('/')) {
-                            path = '/' + path;
-                        }
-                        if (path.split('/').length === depth) {
+                        if (fileInfo.path.split('/').length === depth) {
                             current += 1;
                             docSeen += 1;
                             // 跳过空内容的叶子文档
+                            const path = `${info.getPathForFile(fileInfo)}${fileInfo.title}`;
                             if (!fileInfo.hasContent && !parentCount.get(notionID)) {
                                 console.log(`"${path}"'s content is blank, create doc skipped`);
                                 continue;

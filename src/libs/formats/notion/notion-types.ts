@@ -61,7 +61,7 @@ export interface NotionFileInfo {
 	title: string;
 	parentIds: string[];
 	blockID: string;
-	path: string; // 文档 html 所在压缩包内的文件路径
+	path: string;
 	ctime: Date | null;
 	mtime: Date | null;
 	hasContent: Boolean; // 文档是否有内容
@@ -89,13 +89,7 @@ export class NotionResolverInfo {
 		this.singleLineBreaks = singleLineBreaks;
 	}
 
-	/**
-	 * 获取文档的路径
-	 * 注意：并不是真实路径，而是根据 parentIds 来获取的路径
-	 * @param fileInfo 
-	 * @returns string
-	 */
-	getPathForFile(fileInfo: NotionFileInfo | NotionAttachmentInfo): string {
+	getPathForFile(fileInfo: NotionFileInfo | NotionAttachmentInfo) {
 		let { idsToFileInfo } = this;
 		const pathNames = fileInfo.path.split('/');
 		return fileInfo.parentIds
