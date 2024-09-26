@@ -90,8 +90,14 @@
                 console.log('Looking for files to import');
                 showMessage(pluginInstance.i18n.startCollectFilePreImport, 1000*30, 'info')
                 total = 0;
+                let importIsNotStarted = true;
                 await processZips(import_files, async (file) => {
                     total += 1;
+                    if (importIsNotStarted) {
+                        dispatch('startImport');
+                        console.log('Starting import');
+                        importIsNotStarted = false;
+                    }
                     try {
                         await parseFileInfo(info, file);
                     }
@@ -100,8 +106,6 @@
                     }
                 });
                 total +=  Object.keys(info.idsToFileInfo).length
-                dispatch('startImport');
-                console.log('Starting import');
                 showMessage(pluginInstance.i18n.startImport, 1000*15, 'info')
                 console.log('Creating all document...')
                 // 首先查找各个文档作为其他文档的parent出现了多少次
