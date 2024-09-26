@@ -99,25 +99,30 @@
                         console.log('文件搜集 Import skipped', file.fullpath, e)
                     }
                 });
+                total +=  Object.keys(info.idsToFileInfo).length
                 dispatch('startImport');
                 console.log('Starting import');
                 showMessage(pluginInstance.i18n.startImport, 1000*15, 'info')
                 console.log('Creating all document...')
-                // 创建一个空文档先占位，获取到 blockid
-                let parentCount: Map<string, number> = new Map(); // 用来存放各个文档作为其他文档的parent出现了多少次
+                // 首先查找各个文档作为其他文档的parent出现了多少次
+                // 如果不存在的则为叶子文档
+                let parentCount: Map<string, number> = new Map();
                 for (const fileInfo of Object.values(info.idsToFileInfo) as NotionFileInfo[]) {
                     fileInfo.parentIds.forEach(pid => {
                         parentCount.set(pid, (parentCount.get(pid) || 0)+1)
                     })
                 }
-                total +=  Object.keys(info.idsToFileInfo).length
+                // 创建一个空文档先占位，获取到 blockid
+                // 广度优先遍历（BFS）创建文档
+                //   由于 createDocWithMd 对于相同路径的文档会创建两遍，如果先创建了较深路径的文档，
+                //   则后续创建它的父级文档会出现重复名称的文档
                 let depth = 0
+                let docSeen = 0;
                 while (true) {
-                    let doc_count = 0
                     for (const [notionID, fileInfo] of Object.entries(info.idsToFileInfo) as [string, NotionFileInfo][]) {
-                        if (fileInfo.parentIds.length === depth) {
+                        if (fileInfo.path.split('/').length === depth) {
                             current += 1;
-                            doc_count += 1;
+                            docSeen += 1;
                             // 跳过空内容的叶子文档
                             const path = `${info.getPathForFile(fileInfo)}${fileInfo.title}`;
                             if (!fileInfo.hasContent && !parentCount.get(notionID)) {
@@ -129,10 +134,6 @@
                                 notebook: currentNotebook.id,
                                 path: path,
                             };
-                            if (fileInfo.parentIds.at(-1) && info.idsToFileInfo[fileInfo.parentIds.at(-1)]?.blockID) {
-                                // @ts-ignore
-                                payload.parentID = info.idsToFileInfo[fileInfo.parentIds.at(-1)].blockID;
-                            }
                             const resCreateDocWithMd = await client.createDocWithMd(payload);
                             if (resCreateDocWithMd.code !== 0) {
                                 console.error(resCreateDocWithMd.msg);
@@ -142,14 +143,16 @@
                         }
                     }
                     depth += 1;
-                    if (doc_count === 0) {
+                    if (docSeen === Object.keys(info.idsToFileInfo).length) {
                         break;
                     }
                 }
+                // 写入所有文档内容
                 await processZips(import_files, async (file) => {
                     current++;
                     try {
                         if (file.extension === 'html') {
+                            // 写入文档和 database
                             const id = getNotionId(file.name);
                             if (!id) {
                                 throw new Error('ids not found for ' + file.filepath);
@@ -189,6 +192,7 @@
                                 return;
                             }
                         } else {
+                            // 写入附件
                             const attachmentInfo = info.pathsToAttachmentInfo[file.filepath];
                             if (!attachmentInfo) {
                                 throw new Error('attachment info not found for ' + file.filepath);
