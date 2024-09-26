@@ -543,12 +543,11 @@ function getDatabases(info: NotionResolverInfo, body: HTMLElement) {
 				break
 			}
 		}
-		Array.from(tableNode.querySelectorAll('tbody > tr')).forEach((x: HTMLElement) => {
-			console.log(x.outerHTML);
-			const rowNotionID = getNotionId(x.querySelectorAll('td')[priKeyIndex].querySelector('a').href);
+		Array.from(tableNode.querySelectorAll('tbody > tr')).forEach((trNode: HTMLElement) => {
+			const rowNotionID = getNotionId(trNode.querySelectorAll('td')[priKeyIndex].querySelector('a').href);
 			const rowid = info.idsToFileInfo[rowNotionID]?.blockID || generateSiYuanID();
 			const hasRelBlock = Boolean(info.idsToFileInfo[rowNotionID] && info.idsToFileInfo[rowNotionID].blockID !== ''); // 是否有相关联的 block
-			Array.from(x.querySelectorAll('td')).forEach((y: HTMLElement, colIndex: number) => {
+			Array.from(trNode.querySelectorAll('td')).forEach((tdNode: HTMLElement, colIndex: number) => {
 				let baseColValue = {
 					rowid: rowid,
 					hasRelBlock: hasRelBlock,
@@ -556,10 +555,10 @@ function getDatabases(info: NotionResolverInfo, body: HTMLElement) {
 				if (cols[colIndex].type === 'typesTitle') {
 					cols[colIndex].values.push({
 						...baseColValue,
-						value: y.querySelector('a').innerText.trim()
+						value: tdNode.querySelector('a').innerText.trim()
 					})
 				} else if (cols[colIndex].type === 'typesDate') {
-					const times = y.innerText.trim().replace('@', '').split('→').map(z => {
+					const times = tdNode.innerText.trim().replace('@', '').split('→').map(z => {
 						return z.trim();
 					}).filter(Boolean)
 					cols[colIndex].values.push({
@@ -567,9 +566,10 @@ function getDatabases(info: NotionResolverInfo, body: HTMLElement) {
 						value: times
 					})
 				} else if (['typesSelect', 'typesMultipleSelect'].includes(cols[colIndex].type)) {
-					let opts = Array.from(y.querySelectorAll('span.selected-value')).forEach((selectSpan: HTMLElement) => {
+					let opts = Array.from(tdNode.querySelectorAll('span.selected-value')).map((selectSpan: HTMLElement) => {
 						const opt = selectSpan.innerText.trim();
 						cols[colIndex].selectValues.add(opt);
+						return opt;
 					});
 					cols[colIndex].values.push({
 						...baseColValue,
@@ -578,12 +578,12 @@ function getDatabases(info: NotionResolverInfo, body: HTMLElement) {
 				} else if (cols[colIndex].type === 'typesCheckbox') {
 					cols[colIndex].values.push({
 						...baseColValue,
-						value: Boolean(y.querySelector('div.checkbox-on'))
+						value: Boolean(tdNode.querySelector('div.checkbox-on'))
 					})
 				} else {
 					cols[colIndex].values.push({
 						...baseColValue,
-						value: y.innerText.trim(),
+						value: tdNode.innerText.trim(),
 					});
 				}
 			})
@@ -657,7 +657,7 @@ function getDatabases(info: NotionResolverInfo, body: HTMLElement) {
 					opts.set(x, `${i+1}`)
 				}
 				keyValue.key = generateColumnKey(`${col.name}`, colType, Array.from(opts, ([name, color]) => ({ name, color })));
-				keyValue.values = col.values.filter(v => {return Boolean(v.value)}).map((x) => {
+				keyValue.values = col.values.filter(v => {return Boolean(v.value.length)}).map((x) => {
 					return {
 						"id": generateSiYuanID(),
 						"keyID": keyValue.key['id'],
