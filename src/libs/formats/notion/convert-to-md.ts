@@ -733,7 +733,7 @@ function getDatabases(info: NotionResolverInfo, body: HTMLElement) {
 		let avData = {
 			"spec": 0,
 			"id": avID,
-			"name": `${table.title}\n${table.description}`,
+			"name": [table.title, table.description].filter(Boolean).join('\n'),
 			"keyValues": keyValues,
 			"keyIDs": null,
 			"viewID": avViewID,
