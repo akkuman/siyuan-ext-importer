@@ -3,6 +3,7 @@ import { ZipEntryFile } from '../../zip.js';
 import { NotionResolverInfo } from './notion-types.js';
 import { getNotionId, parseParentIds } from './notion-utils.js';
 
+
 export async function parseFileInfo(info: NotionResolverInfo, file: ZipEntryFile) {
 	let { filepath } = file;
 
@@ -41,6 +42,8 @@ export async function parseFileInfo(info: NotionResolverInfo, file: ZipEntryFile
 			ctime,
 			mtime,
 			title,
+			blockID: '',
+			hasContent: Boolean((dom.querySelector('div[class=page-body]') as HTMLElement)?.innerHTML.trim().length)
 		};
 	}
 	else {

@@ -1,13 +1,15 @@
 import { parseFilePath } from '../../filesystem.js';
-import { HTMLElementfindAll, parseHTML, createEl, createSpan } from '../../util.js';
+import { HTMLElementfindAll, parseHTML, createEl, createSpan, generateSiYuanID } from '../../util.js';
 import { ZipEntryFile } from '../../zip.js';
-import { MarkdownInfo, NotionLink, NotionProperty, NotionPropertyType, NotionResolverInfo } from './notion-types.js';
+import { type MarkdownInfo, type NotionLink, type NotionProperty, type NotionPropertyType, NotionResolverInfo } from './notion-types.js';
 import {
 	escapeHashtags,
 	getNotionId,
 	hoistChildren,
 	stripNotionId,
 	stripParentDirectories,
+	toTimestamp,
+	timestampIsPrueDate,
 } from './notion-utils.js';
 
 let lute = window.Lute.New();
@@ -27,6 +29,10 @@ export async function readToMarkdown(info: NotionResolverInfo, file: ZipEntryFil
 		throw new Error('page body was not found');
 	}
 
+	// 由于 database 处理需要靠 <a href> 来构建关联关系，所以需要在转化链接之前完成
+	let attributeViews = getDatabases(info, body);
+
+	// 将页面内所有的 a 标签转换为 siyuan 的双链指向
 	const notionLinks = getNotionLinks(info, body);
 	convertLinksToSiYuan(info, notionLinks);
 
@@ -92,9 +98,15 @@ export async function readToMarkdown(info: NotionResolverInfo, file: ZipEntryFil
 	const description = dom.querySelector('p[class*=page-description]')?.textContent;
 	if (description) markdownBody = description + '\n\n' + markdownBody;
 
+	// 替换 markdown 中的 database
+	markdownBody = markdownBody.replace(/\[:av:(.*?):\]/g, (_, avID) => {
+		return `<div data-type="NodeAttributeView" data-av-id="${avID}" data-av-type="table"></div>`;
+	});
+
 	return {
 		'content': markdownBody.trim(),
 		'attrs': frontMatter,
+		'attributeViews': attributeViews,
 	}
 }
 
@@ -426,22 +438,20 @@ function convertHtmlLinksToURLs(content: HTMLElement) {
 
 function convertLinksToSiYuan(info: NotionResolverInfo, notionLinks: NotionLink[]) {
 	for (let link of notionLinks) {
-		let obsidianLink = createSpan();
+		let siyuanLink = createSpan();
 		let linkContent: string;
 
 		switch (link.type) {
 			case 'relation':
 				const linkInfo = info.idsToFileInfo[link.id];
-				if (!linkInfo) {
+				if (linkInfo && linkInfo.blockID !== '') {
+					linkContent = `((${linkInfo.blockID} '${linkInfo.title}'))`;
+				} else {
 					console.warn('missing relation data for id: ' + link.id);
 					const { basename } = parseFilePath(
 						decodeURI(link.a.getAttribute('href') ?? '')
 					);
-
 					linkContent = `[[${stripNotionId(basename)}]]`;
-				}
-				else {
-					linkContent = `[[${linkInfo.title}]]`;
 				}
 				break;
 			case 'attachment':
@@ -462,11 +472,12 @@ function convertLinksToSiYuan(info: NotionResolverInfo, notionLinks: NotionLink[
 				break;
 		}
 
-		obsidianLink.textContent = linkContent;
-		link.a.replaceWith(obsidianLink);
+		siyuanLink.textContent = linkContent;
+		link.a.replaceWith(siyuanLink);
 	}
 }
 
+// cleanInvalidDOM 清除会导致 siyuan lute 报错的 dom 结构
 function cleanInvalidDOM(body: HTMLElement) {
 	for (const ele of HTMLElementfindAll(body, 'script[src]')) {
 		ele.remove();
@@ -474,4 +485,300 @@ function cleanInvalidDOM(body: HTMLElement) {
     for (const ele of HTMLElementfindAll(body, 'link[rel="stylesheet"]')) {
 		ele.remove();
 	}
+}
+
+// generateColumnKey 根据所给的信息生成列
+function generateColumnKey(name: string, colType: string, options: any[]) {
+	return {
+		"id": generateSiYuanID(),
+		"name": name,
+		"type": colType,
+		"icon": "",
+		"numberFormat": "",
+		"template": "",
+		"options": options,
+	}
+}
+
+// getDatabases 将 notion 中的 database 转化为 siyuan 中的 database
+// 并将 dom 中的 database 转为类似于 [:av:20240902133057-ioqa2mz:] 的占位，方便后续处理
+function getDatabases(info: NotionResolverInfo, body: HTMLElement) {
+	let tableInfos = [];
+	// 如果没有 table 则直接返回
+	const hasTable = Boolean(body.querySelector('table[class="collection-content"]'));
+	if (!hasTable) {
+		return []
+	}
+	// 检查是否为页面内嵌 database
+	const isEmbedTable = Boolean(body.querySelector('div[class="collection-content"]'));
+	if (isEmbedTable) {
+		tableInfos = Array.from(body.querySelectorAll('div[class="collection-content"]')).map((divNode: HTMLElement) => {
+			return {
+				title: (divNode.querySelector('.collection-title') as HTMLElement)?.innerText.trim() || '',
+				description: '',
+				tableNode: (divNode.querySelector('table[class="collection-content"]') as HTMLElement),
+			}
+		})
+	} else {
+		tableInfos = [{
+			title: (body.querySelector('article > header > .page-title') as HTMLElement)?.innerText.trim() || '',
+			description: (body.querySelector('article > header > .page-description') as HTMLElement)?.innerText.trim() || '',
+			tableNode: (body.querySelector('table[class="collection-content"]') as HTMLElement),
+		}]
+	}
+	let tables = tableInfos.map(tableInfo => {
+		let tableNode: HTMLElement = tableInfo.tableNode;
+		let cols = Array.from(tableNode.querySelectorAll('thead > tr > th')).map((x: HTMLElement) => {
+			return {
+				type: x.querySelector('span > svg').classList[0],
+				name: x.innerText.trim(),
+				selectValues: new Set(),
+				values: [],
+			}
+		})
+		let priKeyIndex = 0; // 主键所在的列 index
+		for (const colIndex of cols.keys()) {
+			if (cols[colIndex].type === 'typesTitle') {
+				priKeyIndex = colIndex;
+				break
+			}
+		}
+		Array.from(tableNode.querySelectorAll('tbody > tr')).forEach((x: HTMLElement) => {
+			console.log(x.outerHTML);
+			const rowNotionID = getNotionId(x.querySelectorAll('td')[priKeyIndex].querySelector('a').href);
+			const rowid = info.idsToFileInfo[rowNotionID]?.blockID || generateSiYuanID();
+			const hasRelBlock = Boolean(info.idsToFileInfo[rowNotionID] && info.idsToFileInfo[rowNotionID].blockID !== ''); // 是否有相关联的 block
+			Array.from(x.querySelectorAll('td')).forEach((y: HTMLElement, colIndex: number) => {
+				let baseColValue = {
+					rowid: rowid,
+					hasRelBlock: hasRelBlock,
+				}
+				if (cols[colIndex].type === 'typesTitle') {
+					cols[colIndex].values.push({
+						...baseColValue,
+						value: y.querySelector('a').innerText.trim()
+					})
+				} else if (cols[colIndex].type === 'typesDate') {
+					const times = y.innerText.trim().replace('@', '').split('→').map(z => {
+						return z.trim();
+					}).filter(Boolean)
+					cols[colIndex].values.push({
+						...baseColValue,
+						value: times
+					})
+				} else if (['typesSelect', 'typesMultipleSelect'].includes(cols[colIndex].type)) {
+					let opts = Array.from(y.querySelectorAll('span.selected-value')).forEach((selectSpan: HTMLElement) => {
+						const opt = selectSpan.innerText.trim();
+						cols[colIndex].selectValues.add(opt);
+					});
+					cols[colIndex].values.push({
+						...baseColValue,
+						value: opts
+					})
+				} else if (cols[colIndex].type === 'typesCheckbox') {
+					cols[colIndex].values.push({
+						...baseColValue,
+						value: Boolean(y.querySelector('div.checkbox-on'))
+					})
+				} else {
+					cols[colIndex].values.push({
+						...baseColValue,
+						value: y.innerText.trim(),
+					});
+				}
+			})
+		});
+		return {
+			title: tableInfo.title,
+			description: tableInfo.description,
+			cols: cols,
+		}
+	})
+	console.log(tables)
+	let avs = tables.map(table => {
+		// 构造出所有的数据
+		let keyValues = [];
+		let rowIds = [];
+		for (const col of table.cols) {
+			let colType = 'text';
+			switch (col.type) {
+				case 'typesTitle':
+					colType = 'block';
+					break;
+				case 'typesDate':
+					colType = 'date';
+					break;
+				case 'typesSelect':
+					colType = 'select';
+					break;
+				case 'typesMultipleSelect':
+					colType = 'mSelect';
+					break;
+				case 'typesCheckbox':
+					colType = 'checkbox'
+					break;
+			}
+			let keyValue = {
+				key: {},
+				values: []
+			}
+			if (colType === 'date') {
+				keyValue.key = generateColumnKey(`${col.name}`, colType, [])
+				keyValue.values = col.values.filter(v => {return Boolean(v.value.length)}).map((x) => {
+					// 排除掉空数组，剩余的可构造
+					const times = x.value.map(toTimestamp)
+					const value = {
+						id: generateSiYuanID(),
+						keyID: keyValue.key['id'],
+						blockID: x.rowid,
+						type: colType,
+						createdAt: Date.now(),
+						updatedAt: Date.now(),
+						date: {
+							content: times[0],
+							isNotEmpty: true,
+							hasEndDate: false,
+							isNotTime: timestampIsPrueDate(times[0]),
+							content2: 0,
+							isNotEmpty2: false,
+							formattedContent: ""
+						}
+					}
+					if (times.length === 2) {
+						value.date.hasEndDate = true;
+						value.date.content2 = times[1];
+						value.date.isNotEmpty2 = true;
+					}
+					return value;
+				})
+			} else if (['select', 'mSelect'].includes(colType)) {
+				let opts = new Map()
+				for (const [i, x] of Array.from(col.selectValues).entries()) {
+					opts.set(x, `${i+1}`)
+				}
+				keyValue.key = generateColumnKey(`${col.name}`, colType, Array.from(opts, ([name, color]) => ({ name, color })));
+				keyValue.values = col.values.filter(v => {return Boolean(v.value)}).map((x) => {
+					return {
+						"id": generateSiYuanID(),
+						"keyID": keyValue.key['id'],
+						"blockID": x.rowid,
+						"type": colType,
+						"createdAt": Date.now(),
+						"updatedAt": Date.now(),
+						"mSelect": x.value.map(v => {
+							return {
+								content: v,
+								color: opts.get(v),
+							}
+						})
+					}
+				})
+			} else if (colType === 'block') {
+				keyValue.key = generateColumnKey(`${col.name}`, colType, [])
+				keyValue.values = col.values.map(x => {
+					rowIds.push(x.rowid)
+					return {
+						"id": generateSiYuanID(),
+						"keyID": keyValue.key['id'],
+						"blockID": x.rowid,
+						"type": colType,
+						"isDetached": !x.hasRelBlock,
+						"createdAt": Date.now(),
+						"updatedAt": Date.now(),
+						"block": {
+							"id": x.rowid,
+							"content": x.value,
+							"created": Date.now(),
+							"updated": Date.now(),
+						}
+					}
+				})
+			} else if (colType === 'checkbox') {
+				keyValue.key = generateColumnKey(`${col.name}`, colType, [])
+				keyValue.values = col.values.filter(v => {return v.value}).map(x => {
+					return {
+						"id": generateSiYuanID(),
+						"keyID": keyValue.key['id'],
+						"blockID": x.rowid,
+						"type": colType,
+						"createdAt": Date.now(),
+						"updatedAt": Date.now(),
+						"checkbox": {
+							"checked": x.value,
+						}
+					}
+				})
+			} else {
+				keyValue.key = generateColumnKey(`${col.name}`, 'text', [])
+				keyValue.values = col.values.filter(v => {return Boolean(v.value)}).map((x) => {
+					return {
+						"id": generateSiYuanID(),
+						"keyID": keyValue.key['id'],
+						"blockID": x.rowid,
+						"type": 'text',
+						"createdAt": Date.now(),
+						"updatedAt": Date.now(),
+						"text": {
+							"content": x.value,
+						}
+					}
+				})
+			}
+			keyValues.push(keyValue)
+		}
+		// 构建成 siyuan 的数据库
+		const avID = generateSiYuanID();
+		const avViewID = generateSiYuanID();
+		const avTableID = generateSiYuanID();
+		let avData = {
+			"spec": 0,
+			"id": avID,
+			"name": `${table.title}\n${table.description}`,
+			"keyValues": keyValues,
+			"keyIDs": null,
+			"viewID": avViewID,
+			"views": [
+				{
+					"id": avViewID,
+					"icon": "",
+					"name": "表格",
+					"hideAttrViewName": false,
+					"type": "table",
+					"table": {
+						"spec": 0,
+						"id": avTableID,
+						"columns": keyValues.map((x) => {
+							return {
+								"id": x.key.id,
+								"wrap": false,
+								"hidden": false,
+								"pin": false,
+								"width": ""
+							}
+						}),
+						"rowIds": rowIds,
+						"filters": [],
+						"sorts": [],
+						"pageSize": 50
+					}
+				}
+			]
+		};
+		return avData;
+	});
+	console.log(avs)
+	// 将 dom 中的 database 转为类似于 [:av:20240902133057-ioqa2mz:] 的占位，方便后续处理
+	let collectionContentSelector = 'table[class="collection-content"]';
+	if (isEmbedTable) {
+		collectionContentSelector = 'div[class="collection-content"]'
+	}
+	body.querySelectorAll(collectionContentSelector).forEach((table, i) => {
+		// 创建新的 <div> 元素
+		var newDiv = document.createElement('div');
+		newDiv.textContent = `[:av:${avs[i].id}:]`;
+		
+		// 替换掉原来的 <table> 元素
+		table.parentNode.replaceChild(newDiv, table);
+	});
+	return avs;
 }

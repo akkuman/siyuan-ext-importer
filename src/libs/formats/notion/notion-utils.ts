@@ -52,3 +52,23 @@ export function escapeHashtags(body: string) {
 export function hoistChildren(el: ChildNode) {
 	el.replaceWith(...Array.from(el.childNodes));
 }
+
+// 将 2024/07/22 或者 2024/07/22 8:15 这种时间转换为时间戳
+export function toTimestamp(dateString: string): number {
+	// 创建 Date 对象时，如果时间部分缺失，JavaScript 会默认设置为 00:00:00
+	const date = new Date(dateString);
+
+	// 如果 date 是无效的时间，返回 NaN
+	if (isNaN(date.getTime())) {
+		return 0;
+	}
+
+	// 返回时间戳，单位为毫秒
+	return date.getTime();
+}
+
+// timestampIsPrueDate 获取时间戳是否为日期（不含时间）
+export function timestampIsPrueDate(timestamp: number) {
+	const date = new Date(timestamp);
+	return date.getHours() === 0 && date.getMinutes() === 0 && date.getSeconds() === 0 && date.getMilliseconds() === 0;
+}

@@ -171,3 +171,12 @@ export function createSpan(o?: DomElementInfo | string, callback?: (el: HTMLSpan
 export function calculateMD5(input: string): string {
     return CryptoJS.MD5(input).toString();
 }
+
+function randStr(length: number): string {
+    return [...Array(length)].map(() => "abcdefghijklmnopqrstuvwxyz0123456789".charAt(Math.floor(Math.random() * 36))).join('');
+}
+
+// 生成一个思源的id
+export function generateSiYuanID(): string {
+    return new Date().toISOString().replace(/[-:.TZ]/g, '').slice(0, 14) + '-' + randStr(7);
+}

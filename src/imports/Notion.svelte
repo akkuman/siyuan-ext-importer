@@ -3,18 +3,19 @@
 	import { KCol, KRow } from '@ikun-ui/grid';
 	import { KDivider } from '@ikun-ui/divider';
     import { KButton } from '@ikun-ui/button';
-    import { PickedFile, WebPickedFile } from '@/libs/filesystem';
+    import { type PickedFile, WebPickedFile } from '@/libs/filesystem';
     import { NotionResolverInfo } from '@/libs/formats/notion/notion-types';
     import { readZip, ZipEntryFile } from '@/libs/zip';
     import { getNotionId } from '@/libs/formats/notion/notion-utils';
     import { parseFileInfo } from '@/libs/formats/notion/parse-info';
 	import { Client } from '@siyuan-community/siyuan-sdk';
-    import { readToMarkdown } from '@/libs/formats/notion/convert-to-md';
+    import { readToMarkdown } from '../libs/formats/notion/convert-to-md';
     import FileInput from '@/FileInput.svelte';
     import { createEventDispatcher } from 'svelte';
     import { KInput } from '@ikun-ui/input';
     import Ikun from '@/assets/ikun.svelte';
     import { showMessage } from 'siyuan';
+    import { type NotionFileInfo } from '../libs/formats/notion/notion-types';
 
     const dispatch = createEventDispatcher();
 
@@ -87,11 +88,12 @@
                 const info = new NotionResolverInfo('', false);
                 let import_files = [new WebPickedFile(file)];
                 console.log('Looking for files to import');
-                showMessage(pluginInstance.i18n.pluginInstance, 1000*30, 'info')
+                showMessage(pluginInstance.i18n.startCollectFilePreImport, 1000*30, 'info')
+                total = 0;
                 await processZips(import_files, async (file) => {
+                    total += 1;
                     try {
                         await parseFileInfo(info, file);
-                        total = Object.keys(info.idsToFileInfo).length + Object.keys(info.pathsToAttachmentInfo).length;
                     }
                     catch (e) {
                         console.log('文件搜集 Import skipped', file.fullpath, e)
@@ -100,6 +102,50 @@
                 dispatch('startImport');
                 console.log('Starting import');
                 showMessage(pluginInstance.i18n.startImport, 1000*15, 'info')
+                console.log('Creating all document...')
+                // 创建一个空文档先占位，获取到 blockid
+                let parentCount: Map<string, number> = new Map(); // 用来存放各个文档作为其他文档的parent出现了多少次
+                for (const fileInfo of Object.values(info.idsToFileInfo) as NotionFileInfo[]) {
+                    fileInfo.parentIds.forEach(pid => {
+                        parentCount.set(pid, (parentCount.get(pid) || 0)+1)
+                    })
+                }
+                total +=  Object.keys(info.idsToFileInfo).length
+                let depth = 0
+                while (true) {
+                    let doc_count = 0
+                    for (const [notionID, fileInfo] of Object.entries(info.idsToFileInfo) as [string, NotionFileInfo][]) {
+                        if (fileInfo.parentIds.length === depth) {
+                            current += 1;
+                            doc_count += 1;
+                            // 跳过空内容的叶子文档
+                            const path = `${info.getPathForFile(fileInfo)}${fileInfo.title}`;
+                            if (!fileInfo.hasContent && !parentCount.get(notionID)) {
+                                console.log(`"${path}"'s content is blank, create doc skipped`);
+                                continue;
+                            }
+                            const payload = {
+                                markdown: '',
+                                notebook: currentNotebook.id,
+                                path: path,
+                            };
+                            if (fileInfo.parentIds.at(-1) && info.idsToFileInfo[fileInfo.parentIds.at(-1)]?.blockID) {
+                                // @ts-ignore
+                                payload.parentID = info.idsToFileInfo[fileInfo.parentIds.at(-1)].blockID;
+                            }
+                            const resCreateDocWithMd = await client.createDocWithMd(payload);
+                            if (resCreateDocWithMd.code !== 0) {
+                                console.error(resCreateDocWithMd.msg);
+                                continue;
+                            }
+                            info.idsToFileInfo[notionID].blockID = resCreateDocWithMd.data;
+                        }
+                    }
+                    depth += 1;
+                    if (doc_count === 0) {
+                        break;
+                    }
+                }
                 await processZips(import_files, async (file) => {
                     current++;
                     try {
@@ -112,22 +158,34 @@
                             if (!fileInfo) {
                                 throw new Error('file info not found for ' + file.filepath);
                             }
-
-                            console.log(`Importing note ${fileInfo.title}`);
-
-                            const markdownInfo = await readToMarkdown(info, file);
                             const path = `${info.getPathForFile(fileInfo)}${fileInfo.title}`;
-                            if (markdownInfo.content === '') {
-                                console.log(`"${path}"'s content is blank，import skipped`)
+                            if (fileInfo.blockID === '') {
+                                console.log(`"${path}"'s blockID is blank, write doc skipped`)
                                 return;
                             }
-                            const resCreateDocWithMd = await client.createDocWithMd({
-                                markdown: markdownInfo.content,
-                                notebook: currentNotebook.id,
-                                path: path,
+                            // 处理读取 html
+                            console.log(`Importing note ${fileInfo.title}`);
+                            const markdownInfo = await readToMarkdown(info, file);
+                            // 上传 siyuan database 文件
+                            for (const av of markdownInfo.attributeViews) {
+                                const avJSONString = JSON.stringify(av);
+                                const blob = new Blob([avJSONString], { type: 'application/json' });
+                                const resPutFile = await client.putFile({
+                                    'file': new File([blob], 'data.json', { type: 'application/json' }),
+                                    'path': `/data/storage/av/${av.id}.json`,
+                                })
+                                if (resPutFile.code !== 0) {
+                                    console.log(`put attribute view failed: ${resPutFile.msg}`)
+                                }
+                            }
+                            // 更新文档
+                            const resUpdateBlock = await client.updateBlock({
+                                data: markdownInfo.content,
+                                dataType: 'markdown',
+                                id: fileInfo.blockID,
                             })
-                            if (resCreateDocWithMd.code !== 0) {
-                                console.error(resCreateDocWithMd.msg);
+                            if (resUpdateBlock.code !== 0) {
+                                console.error(resUpdateBlock.msg);
                                 return;
                             }
                         } else {

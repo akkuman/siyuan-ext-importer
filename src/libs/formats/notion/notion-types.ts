@@ -33,6 +33,8 @@ export type MarkdownInfo = {
 	// 在 siyuan 中的块属性一般是给插件使用，一般情况下不需要使用
 	// 在 notion 中只有在 database 中的文档才有属性，已经将 database 转为了表格，不需要再对文档的块属性做设置了
 	attrs: { [key: string]: string };
+	// 用来存放已经转换为 siyuan 的 database 数据
+	attributeViews: any[];
 }
 
 export type NotionLink =
@@ -58,9 +60,11 @@ export type NotionLink =
 export interface NotionFileInfo {
 	title: string;
 	parentIds: string[];
+	blockID: string;
 	path: string;
 	ctime: Date | null;
 	mtime: Date | null;
+	hasContent: Boolean; // 文档是否有内容
 }
 
 export interface NotionAttachmentInfo {
