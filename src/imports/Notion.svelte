@@ -195,6 +195,28 @@
                                 console.error(resUpdateBlock.msg);
                                 return;
                             }
+                            // 更新 database 关联的文档属性 custom-avs（siyuan某些操作会用到这些属性，比如文档的删除同步）
+                            for (const av of markdownInfo.attributeViews) {
+                                for (const keyValue of av.keyValues) {
+                                    if (keyValue.key.type !== 'block') {
+                                        continue
+                                    }
+                                    for (const rowValue of keyValue.values) {
+                                        if (rowValue?.isDetached) {
+                                            continue
+                                        }
+                                        const resSetBlockAttrs = await client.setBlockAttrs({
+                                            attrs: {
+                                                'custom-avs': av.id,
+                                            },
+                                            id: rowValue.block.id
+                                        })
+                                        if (resSetBlockAttrs.code !== 0) {
+                                            console.log(resUpdateBlock.msg);
+                                        }
+                                    }
+                                }
+                            }
                         } else {
                             // 写入附件
                             const attachmentInfo = info.pathsToAttachmentInfo[file.filepath];
