@@ -208,7 +208,7 @@ function getNotionLinks(info: NotionResolverInfo, body: HTMLElement) {
 		}
 		else if (attachmentPath) {
 			let link_type: NotionLink['type'] = 'attachment';
-			if (/(\.png|\.jpg)\!?\S*$/i.test(decodedURI)) {
+			if (/(\.png|\.jpg|\.webp|\.gif|\.bmp|\.jpeg)\!?\S*$/i.test(decodedURI)) {
 				link_type = 'image'
 			}
 			links.push({
