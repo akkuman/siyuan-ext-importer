@@ -79,6 +79,13 @@ export async function readToMarkdown(info: NotionResolverInfo, file: ZipEntryFil
 
     cleanInvalidDOM(body);
 
+	// 将 dom 中 code 标签的 class 转换为小写
+	// 样例 <code class="language-Mermaid"> 转换为 <code class="language-mermaid">
+
+	dom.querySelectorAll('code[class^=language-]').forEach(codeNode => {
+		codeNode.className = codeNode.className.toLowerCase();
+	});
+
 	let htmlString = body.innerHTML;
 	
 	// Simpler to just use the HTML string for this replacement
