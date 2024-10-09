@@ -259,12 +259,12 @@ function isCallout(element: Element) {
 
 function fixNotionCallouts(body: HTMLElement) {
 	for (let callout of HTMLElementfindAll(body, 'figure.callout')) {
-		const description = callout.children[1].textContent;
-		let calloutBlock = `> [!important]\n> ${description}\n`;
-		if (callout.nextElementSibling && isCallout(callout.nextElementSibling)) {
-			calloutBlock += '\n';
-		}
-		callout.replaceWith(calloutBlock);
+		const blockquote = createEl('blockquote');
+		const span = createSpan();
+		span.textContent = '[!important]';
+		blockquote.replaceChildren(...callout.childNodes);
+		blockquote.insertBefore(span, blockquote.firstChild);
+		callout.replaceWith(blockquote);
 	}
 }
 

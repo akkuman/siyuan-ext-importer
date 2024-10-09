@@ -48,7 +48,7 @@ export async function parseFileInfo(info: NotionResolverInfo, file: ZipEntryFile
 	}
 	else {
         let hashFileName = calculateMD5(file.fullpath);
-        let nameWithExtension = sanitizeFileName(file.name);
+        let nameWithExtension = decodeURI(sanitizeFileName(file.name));
         const parts = nameWithExtension.split('.');
         let fileExt = '';
         if (parts.length > 0) {
