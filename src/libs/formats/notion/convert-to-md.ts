@@ -87,7 +87,7 @@ export async function readToMarkdown(info: NotionResolverInfo, file: ZipEntryFil
 	});
 
 	let htmlString = body.innerHTML;
-	
+
 	// Simpler to just use the HTML string for this replacement
 	splitBrsInFormatting(htmlString, 'strong');
 	splitBrsInFormatting(htmlString, 'em');
@@ -446,19 +446,18 @@ function convertHtmlLinksToURLs(content: HTMLElement) {
 function convertLinksToSiYuan(info: NotionResolverInfo, notionLinks: NotionLink[]) {
 	for (let link of notionLinks) {
 		let siyuanLink = createSpan();
-		let linkContent: string;
 
 		switch (link.type) {
 			case 'relation':
 				const linkInfo = info.idsToFileInfo[link.id];
 				if (linkInfo && linkInfo.blockID !== '') {
-					linkContent = `((${linkInfo.blockID} '${linkInfo.title}'))`;
+					siyuanLink.textContent = `((${linkInfo.blockID} '${linkInfo.title}'))`;
 				} else {
 					console.warn('missing relation data for id: ' + link.id);
 					const { basename } = parseFilePath(
 						decodeURI(link.a.getAttribute('href') ?? '')
 					);
-					linkContent = `[[${stripNotionId(basename)}]]`;
+					siyuanLink.textContent = `[[${stripNotionId(basename)}]]`;
 				}
 				break;
 			case 'attachment':
@@ -467,19 +466,20 @@ function convertLinksToSiYuan(info: NotionResolverInfo, notionLinks: NotionLink[
 					console.warn('missing attachment data for: ' + link.path);
 					continue;
 				}
-				linkContent = `[${attachmentInfo.nameWithExtension}](${attachmentInfo.pathInSiYuanMd})`;
+				siyuanLink.textContent = `[${attachmentInfo.nameWithExtension}](${attachmentInfo.pathInSiYuanMd})`;
 				break;
 			case 'image':
+				siyuanLink = createEl('img')
 				let imageInfo = info.pathsToAttachmentInfo[link.path];
 				if (!imageInfo) {
 					console.warn('missing image file for: ' + link.path);
 					continue;
 				}
-				linkContent = `![${imageInfo.nameWithExtension}](${imageInfo.pathInSiYuanMd})`;
+				siyuanLink.setAttribute('src', imageInfo.pathInSiYuanMd);
+				siyuanLink.setAttribute('alt', imageInfo.nameWithExtension);
 				break;
 		}
 
-		siyuanLink.textContent = linkContent;
 		link.a.replaceWith(siyuanLink);
 	}
 }
