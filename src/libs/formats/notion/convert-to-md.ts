@@ -275,10 +275,6 @@ function stripToSentence(paragraph: string) {
 	return firstSentence ?? '';
 }
 
-function isCallout(element: Element) {
-	return !!(/callout|bookmark/.test(element.getAttribute('class') ?? ''));
-}
-
 function fixNotionCallouts(body: HTMLElement) {
 	for (let callout of HTMLElementfindAll(body, 'figure.callout')) {
 		const blockquote = createEl('blockquote');
