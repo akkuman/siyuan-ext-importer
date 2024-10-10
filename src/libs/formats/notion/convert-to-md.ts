@@ -29,6 +29,16 @@ export async function readToMarkdown(info: NotionResolverInfo, file: ZipEntryFil
 		throw new Error('page body was not found');
 	}
 
+	cleanInvalidDOM(body);
+
+	// 将所有的 h 标签都用一个 div 包裹起来，防止转换时出现和后续元素粘连到一行的问题
+	const headings = body.querySelectorAll('h1, h2, h3, h4, h5, h6');
+	headings.forEach(heading => {
+		const divNode = document.createElement('div');
+		divNode.innerHTML = heading.outerHTML;
+		heading.replaceWith(divNode);
+	});
+
 	// 由于 database 处理需要靠 <a href> 来构建关联关系，所以需要在转化链接之前完成
 	let attributeViews = getDatabases(info, dom);
 
@@ -76,8 +86,6 @@ export async function readToMarkdown(info: NotionResolverInfo, file: ZipEntryFil
 	addCheckboxes(body);
 	replaceTableOfContents(body);
 	formatDatabases(body);
-
-    cleanInvalidDOM(body);
 
 	// 将 dom 中 code 标签的 class 转换为小写
 	// 样例 <code class="language-Mermaid"> 转换为 <code class="language-mermaid">
