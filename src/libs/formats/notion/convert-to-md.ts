@@ -72,7 +72,6 @@ export async function readToMarkdown(info: NotionResolverInfo, file: ZipEntryFil
 	fixNotionEmbeds(body);
 	fixNotionCallouts(body);
 	stripLinkFormatting(body);
-	encodeNewlinesToBr(body);
 	fixNotionDates(body);
 	fixEquations(body);
 
@@ -247,12 +246,19 @@ function fixDoubleBackslash(markdownBody: string) {
 }
 
 function fixEquations(body: HTMLElement) {
-	const katexEls = HTMLElementfindAll(body, '.katex');
-	for (const katex of katexEls) {
-		const annotation = katex.querySelector('annotation');
+	for (const ele of HTMLElementfindAll(body, '.katex-html')) {
+		ele.remove();
+	}
+	const mathEls = HTMLElementfindAll(body, 'math');
+	for (const mathEl of mathEls) {
+		const annotation = mathEl.querySelector('annotation')
 		if (!annotation) continue;
-		annotation.textContent = `$${annotation.textContent}$`;
-		katex.replaceWith(annotation);
+		annotation.textContent = annotation.textContent.trim();
+		// 如果已经是行级公式，则跳过处理
+		if (/\\begin\{.*?\}[\s\S]+\\end\{.*?\}/gmi.test(annotation.textContent)) continue;
+		// 单行公式强制改为行级公式
+		annotation.textContent = `\\begin{align}\n${annotation.textContent}\n\\end{align}`
+		mathEl.replaceWith(annotation)
 	}
 }
 
@@ -348,16 +354,6 @@ function replaceTableOfContents(body: HTMLElement) {
 	for (const link of tocLinks) {
 		if (link.getAttribute('href')?.startsWith('#')) {
 			link.setAttribute('href', '#' + link.textContent);
-		}
-	}
-}
-
-function encodeNewlinesToBr(body: HTMLElement) {
-	body.innerHTML = body.innerHTML.replace(/\n/g, '<br />');
-	// Since <br /> is ignored in codeblocks, we replace with newlines
-	for (const block of HTMLElementfindAll(body, 'code')) {
-		for (const br of HTMLElementfindAll(block, 'br')) {
-			br.replaceWith('\n');
 		}
 	}
 }
@@ -498,6 +494,10 @@ function cleanInvalidDOM(body: HTMLElement) {
 		ele.remove();
 	}
     for (const ele of HTMLElementfindAll(body, 'link[rel="stylesheet"]')) {
+		ele.remove();
+	}
+	for (const ele of HTMLElementfindAll(body, 'style')) {
+		// 一般在 katex 公式前面会存在 <style>@import url('https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css')</style>
 		ele.remove();
 	}
 }
