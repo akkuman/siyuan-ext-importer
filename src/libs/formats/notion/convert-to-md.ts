@@ -1,7 +1,7 @@
 import { parseFilePath } from '../../filesystem.js';
 import { HTMLElementfindAll, parseHTML, createEl, createSpan, generateSiYuanID } from '../../util.js';
 import { ZipEntryFile } from '../../zip.js';
-import { type MarkdownInfo, type NotionLink, type NotionProperty, type NotionPropertyType, NotionResolverInfo } from './notion-types.js';
+import { type MarkdownInfo, type NotionAttachmentInfo, type NotionLink, type NotionProperty, type NotionPropertyType, type NotionResolverInfo } from './notion-types.js';
 import {
 	escapeHashtags,
 	getNotionId,
@@ -209,6 +209,18 @@ function getDecodedURI(a: HTMLAnchorElement): string {
 	);
 }
 
+/**
+ * 从 info.pathsToAttachmentInfo 中找到和路径相符的附件信息
+ */
+function findAttachment(info: NotionResolverInfo, p: string): NotionAttachmentInfo | undefined {
+	for (const filename of Object.keys(info.pathsToAttachmentInfo)) {
+		if (filename.includes(p)) {
+			return info.pathsToAttachmentInfo[filename]
+		}
+	}
+	return undefined;
+}
+
 function getNotionLinks(info: NotionResolverInfo, body: HTMLElement) {
 	const links: NotionLink[] = [];
 
@@ -216,12 +228,11 @@ function getNotionLinks(info: NotionResolverInfo, body: HTMLElement) {
 		const decodedURI = getDecodedURI(a);
 		const id = getNotionId(decodedURI);
 
-		const attachmentPath = Object.keys(info.pathsToAttachmentInfo)
-			.find(filename => filename.includes(decodedURI));
+		const attachment = findAttachment(info, decodedURI);
 		if (id && decodedURI.endsWith('.html')) {
 			links.push({ type: 'relation', a, id });
 		}
-		else if (attachmentPath) {
+		else if (attachment) {
 			let link_type: NotionLink['type'] = 'attachment';
 			if (isImagePath(decodedURI)) {
 				link_type = 'image'
@@ -229,7 +240,7 @@ function getNotionLinks(info: NotionResolverInfo, body: HTMLElement) {
 			links.push({
 				type: link_type,
 				a,
-				path: attachmentPath,
+				path: attachment.path,
 			});
 		}
 	}
@@ -613,6 +624,13 @@ function getDatabases(info: NotionResolverInfo, body: HTMLElement) {
 						...baseColValue,
 						value: Boolean(tdNode.querySelector('div.checkbox-on'))
 					})
+				} else if (cols[colIndex].type === 'typesFile') {
+					cols[colIndex].values.push({
+						...baseColValue,
+						value: Array.from(tdNode.querySelectorAll('a')).map(aNode => {
+							return getDecodedURI(aNode);
+						})
+					})
 				} else {
 					cols[colIndex].values.push({
 						...baseColValue,
@@ -648,6 +666,9 @@ function getDatabases(info: NotionResolverInfo, body: HTMLElement) {
 					break;
 				case 'typesCheckbox':
 					colType = 'checkbox'
+					break;
+				case 'typesFile':
+					colType = 'mAsset';
 					break;
 			}
 			let keyValue = {
@@ -738,6 +759,36 @@ function getDatabases(info: NotionResolverInfo, body: HTMLElement) {
 						"checkbox": {
 							"checked": x.value,
 						}
+					}
+				})
+			} else if (colType === 'mAsset') {
+				keyValue.key = generateColumnKey(`${col.name}`, colType, [])
+				keyValue.values = col.values.filter(v => {return Boolean(v.value.length)}).map((x) => {
+					return {
+						"id": generateSiYuanID(),
+						"keyID": keyValue.key['id'],
+						"blockID": x.rowid,
+						"type": colType,
+						"createdAt": Date.now(),
+						"updatedAt": Date.now(),
+						"mAsset": x.value.map(v => {
+							let assetType = 'file'
+							if (isImagePath(v)) {
+								assetType = 'image'
+							}
+							let assetPath = v;
+							console.log(v);
+							console.log(info.pathsToAttachmentInfo);
+							const attachment = findAttachment(info, v);
+							if (attachment) {
+								assetPath = attachment.pathInSiYuanMd
+							}
+							return {
+								type: assetType,
+								name: assetPath,
+								content: assetPath,
+							}
+						})
 					}
 				})
 			} else {
