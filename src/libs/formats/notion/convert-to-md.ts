@@ -288,12 +288,28 @@ function fixNotionEmbeds(body: HTMLElement) {
 		const link = embed.getAttribute('href');
 		const title = embed.querySelector('div.bookmark-title')?.textContent;
 		const description = stripToSentence(embed.querySelector('div.bookmark-description')?.textContent ?? '');
-		let calloutBlock = `> [!info] ${title}\n` + `> ${description}\n` + `> [${link}](${link})\n`;
-		if (embed.nextElementSibling && isCallout(embed.nextElementSibling)) {
-			// separate callouts with spaces
-			calloutBlock += '\n';
+		let blockquoteEl = createEl('blockquote');
+		const infos = [
+			'[!bookmark]🔖',
+			title,
+			description,
+		]
+		let eles = [];
+		for (const info of infos) {
+			const divEl = createEl('div');
+			divEl.textContent = info.replace(/\n/g, '<br />');
+			eles.push(divEl);
 		}
-		embed.replaceWith(calloutBlock);
+		const divEl = createEl('div');
+		const linkEl = createEl('a')
+		linkEl.setAttribute('href', link);
+		linkEl.textContent = link;
+		divEl.appendChild(linkEl);
+		eles.push(divEl);
+		for (const ele of eles) {
+			blockquoteEl.appendChild(ele);
+		}
+		embed.replaceWith(blockquoteEl);
 	}
 }
 
