@@ -199,13 +199,21 @@ function parseProperty(property: HTMLTableRowElement): {content: string; title: 
 	};
 }
 
+function isImagePath(p: string): Boolean {
+	return (/(\.png|\.jpg|\.webp|\.gif|\.bmp|\.jpeg)\!?\S*$/i.test(p);
+}
+
+function getDecodedURI(a: HTMLAnchorElement): string {
+	return stripParentDirectories(
+		decodeURI(a.getAttribute('href') ?? '')
+	);
+}
+
 function getNotionLinks(info: NotionResolverInfo, body: HTMLElement) {
 	const links: NotionLink[] = [];
 
 	for (const a of HTMLElementfindAll(body, 'a') as HTMLAnchorElement[]) {
-		const decodedURI = stripParentDirectories(
-			decodeURI(a.getAttribute('href') ?? '')
-		);
+		const decodedURI = getDecodedURI(a);
 		const id = getNotionId(decodedURI);
 
 		const attachmentPath = Object.keys(info.pathsToAttachmentInfo)
@@ -215,7 +223,7 @@ function getNotionLinks(info: NotionResolverInfo, body: HTMLElement) {
 		}
 		else if (attachmentPath) {
 			let link_type: NotionLink['type'] = 'attachment';
-			if (/(\.png|\.jpg|\.webp|\.gif|\.bmp|\.jpeg)\!?\S*$/i.test(decodedURI)) {
+			if (isImagePath(decodedURI)) {
 				link_type = 'image'
 			}
 			links.push({
