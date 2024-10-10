@@ -200,7 +200,7 @@ function parseProperty(property: HTMLTableRowElement): {content: string; title: 
 }
 
 function isImagePath(p: string): Boolean {
-	return (/(\.png|\.jpg|\.webp|\.gif|\.bmp|\.jpeg)\!?\S*$/i.test(p);
+	return /(\.png|\.jpg|\.webp|\.gif|\.bmp|\.jpeg)\!?\S*$/i.test(p);
 }
 
 function getDecodedURI(a: HTMLAnchorElement): string {
