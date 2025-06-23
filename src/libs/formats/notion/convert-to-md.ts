@@ -276,8 +276,7 @@ function fixEquations(body: HTMLElement) {
 		annotation.textContent = annotation.textContent.trim();
 		// 如果已经是行级公式，则跳过处理
 		if (/\\begin\{.*?\}[\s\S]+\\end\{.*?\}/gmi.test(annotation.textContent)) continue;
-		// 单行公式强制改为行级公式
-		annotation.textContent = `\\begin{align}\n${annotation.textContent}\n\\end{align}`
+        
 		mathEl.replaceWith(annotation)
 	}
 }
